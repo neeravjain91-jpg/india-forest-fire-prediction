@@ -1,4 +1,5 @@
 from pathlib import Path
+import argparse
 import time
 import requests
 import numpy as np
@@ -17,8 +18,8 @@ BASE_WEATHER = [
 DERIVED = ["rain_24h", "rain_72h", "rain_168h", "avg_temp_24h", "avg_humidity_24h", "max_wind_24h"]
 FEATURE_COLUMNS = BASE_WEATHER + DERIVED
 API = "https://archive-api.open-meteo.com/v1/archive"
-COORD_BATCH = 50
-REQUEST_PAUSE = 10
+COORD_BATCH = 100
+REQUEST_PAUSE = 5
 
 
 def round_coord(x):
@@ -74,7 +75,7 @@ def request_period(points, start_date, end_date):
         try:
             r = requests.get(API, params=params, timeout=180)
             if r.status_code == 429:
-                wait = min(300, 60 * (attempt + 1))
+                wait = min(600, 120 * (attempt + 1))
                 retry_after = r.headers.get("Retry-After")
                 if retry_after and retry_after.isdigit():
                     wait = max(wait, int(retry_after))
@@ -82,7 +83,7 @@ def request_period(points, start_date, end_date):
                 time.sleep(wait)
                 continue
             if r.status_code in (502, 503, 504):
-                wait = min(180, 30 * (attempt + 1))
+                wait = min(240, 45 * (attempt + 1))
                 print(f"Request {r.status_code}; waiting {wait}s before retry {attempt + 1}/8...")
                 time.sleep(wait)
                 continue
@@ -93,7 +94,7 @@ def request_period(points, start_date, end_date):
             if attempt == 7:
                 print(f"Request failed after retries: {exc}")
                 return []
-            wait = min(180, 30 * (attempt + 1))
+            wait = min(240, 45 * (attempt + 1))
             print(f"Request error; waiting {wait}s before retry {attempt + 1}/8...")
             time.sleep(wait)
     return []
@@ -178,31 +179,10 @@ def build_weather_features(keys, cache):
             save_cache(cache)
             print(f"  Request {requests_done}: {len(cache):,} cached rows")
             time.sleep(REQUEST_PAUSE)
-
         print(f"Weather block {block_no}/{len(group_items)} complete; cache rows={len(cache):,}")
 
 
-def main():
-    if not FIRE_FILE.exists():
-        raise FileNotFoundError(FIRE_FILE)
-    fire = load_fire_samples()
-    fire["fire"] = 1
-    nonfire = make_nonfire_samples(fire)
-    combined = pd.concat([fire[["latitude", "longitude", "acq_date", "hour", "grid_lat", "grid_lon", "fire"]], nonfire], ignore_index=True)
-
-    cache = load_cache()
-    if cache:
-        print(f"Loaded complete weather cache: {len(cache):,} rows")
-    keys = [(float(r.grid_lat), float(r.grid_lon), pd.Timestamp(r.acq_date).strftime("%Y-%m-%d"), int(r.hour))
-            for _, r in combined.iterrows()]
-    unique_keys = list(dict.fromkeys(keys))
-    cached = sum(k in cache for k in unique_keys)
-    print(f"Observations: {len(combined):,}")
-    print(f"Unique weather location/time cells: {len(unique_keys):,}")
-    print(f"Already cached: {cached:,}")
-    print(f"Remaining weather cells: {len(unique_keys) - cached:,}")
-    build_weather_features(unique_keys, cache)
-
+def make_training_output(combined, cache, output_path):
     rows = []
     for _, r in combined.iterrows():
         key = (float(r.grid_lat), float(r.grid_lon), pd.Timestamp(r.acq_date).strftime("%Y-%m-%d"), int(r.hour))
@@ -217,16 +197,52 @@ def main():
         raise RuntimeError("No weather-matched samples were produced.")
     out[FEATURE_COLUMNS] = out[FEATURE_COLUMNS].apply(pd.to_numeric, errors="coerce")
     out = out.dropna(subset=FEATURE_COLUMNS + ["fire"])
-    out.to_csv(OUTPUT_FILE, index=False)
+    out.to_csv(output_path, index=False)
+    return out
+
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--cached-only", action="store_true", help="Build a smaller training CSV only from weather already in weather_cache.csv; make no API calls.")
+    args = parser.parse_args()
+
+    if not FIRE_FILE.exists():
+        raise FileNotFoundError(FIRE_FILE)
+    fire = load_fire_samples()
+    fire["fire"] = 1
+    nonfire = make_nonfire_samples(fire)
+    combined = pd.concat([fire[["latitude", "longitude", "acq_date", "hour", "grid_lat", "grid_lon", "fire"]], nonfire], ignore_index=True)
+
+    cache = load_cache()
+    if cache:
+        print(f"Loaded complete weather cache: {len(cache):,} rows")
+
+    keys = [(float(r.grid_lat), float(r.grid_lon), pd.Timestamp(r.acq_date).strftime("%Y-%m-%d"), int(r.hour))
+            for _, r in combined.iterrows()]
+    unique_keys = list(dict.fromkeys(keys))
+    cached = sum(k in cache for k in unique_keys)
+    print(f"Observations: {len(combined):,}")
+    print(f"Unique weather location/time cells: {len(unique_keys):,}")
+    print(f"Already cached: {cached:,}")
+    print(f"Remaining weather cells: {len(unique_keys) - cached:,}")
+
+    if not args.cached_only:
+        build_weather_features(unique_keys, cache)
+    else:
+        print("Cached-only mode: no weather API requests will be made.")
+
+    out = make_training_output(combined, cache, OUTPUT_FILE)
     save_cache(cache)
     print("=" * 60)
-    print("FINAL INDIA TRAINING DATASET CREATED")
+    print("INDIA TRAINING DATASET CREATED")
     print("=" * 60)
     print(f"Rows: {len(out):,}")
     print(f"Columns: {len(out.columns)}")
     print(f"Fire=1: {(out.fire == 1).sum():,}")
     print(f"Fire=0: {(out.fire == 0).sum():,}")
     print(f"Output: {OUTPUT_FILE}")
+    if args.cached_only:
+        print("NOTE: This is a partial cached dataset, not the full 40,000-observation dataset.")
 
 
 if __name__ == "__main__":
