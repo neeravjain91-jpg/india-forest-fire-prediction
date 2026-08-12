@@ -102,7 +102,14 @@ def feature_at_target(hourly, target_ts):
     times = pd.to_datetime(hourly.get("time", []), utc=True)
     if len(times) == 0:
         return None
-    target_ts = pd.Timestamp(target_ts, tz="UTC")
+
+    # target_ts may already be timezone-aware. Normalize it safely to UTC.
+    target_ts = pd.Timestamp(target_ts)
+    if target_ts.tzinfo is None:
+        target_ts = target_ts.tz_localize("UTC")
+    else:
+        target_ts = target_ts.tz_convert("UTC")
+
     matches = np.where(times == target_ts)[0]
     if len(matches) == 0:
         return None
@@ -112,7 +119,6 @@ def feature_at_target(hourly, target_ts):
         arr = hourly.get(col, [])
         values[col] = arr[i] if i < len(arr) else np.nan
 
-    # Use the 24/72/168 hourly observations ending at the target hour.
     def arr_window(col, hours):
         arr = pd.to_numeric(pd.Series(hourly.get(col, [])), errors="coerce")
         start = max(0, i - hours + 1)
@@ -139,8 +145,6 @@ def load_cache():
     if not CACHE_FILE.exists():
         return cache
     old = pd.read_csv(CACHE_FILE)
-    # Only reuse complete feature-cache rows. The old point-weather cache
-    # will be replaced automatically during this run.
     if not set(DERIVED).issubset(old.columns):
         print("Existing cache is from the old format; it will be rebuilt.")
         return cache
@@ -157,8 +161,6 @@ def save_cache(cache):
 
 def build_weather_features(keys, cache):
     missing = [k for k in keys if k not in cache]
-    # Group target cells into 7-day blocks. Each request fetches the preceding
-    # 7 days too, which is enough to calculate the 168-hour rolling features.
     groups = {}
     for lat, lon, date, hour in missing:
         d = pd.Timestamp(date)
@@ -181,13 +183,12 @@ def build_weather_features(keys, cache):
             if not payloads:
                 continue
 
-            target_set = {(float(k[0]), float(k[1]), k[2], int(k[3])) for k in target_keys}
             for (lat, lon), data in zip(batch, payloads):
                 hourly = data.get("hourly", {}) if isinstance(data, dict) else {}
                 for k_lat, k_lon, date, hour in target_keys:
                     if float(k_lat) != lat or float(k_lon) != lon:
                         continue
-                    target = pd.Timestamp(date).tz_localize("UTC") + pd.Timedelta(hours=int(hour))
+                    target = pd.Timestamp(date) + pd.Timedelta(hours=int(hour))
                     vals = feature_at_target(hourly, target)
                     if vals is not None:
                         key = (float(k_lat), float(k_lon), date, int(hour))
