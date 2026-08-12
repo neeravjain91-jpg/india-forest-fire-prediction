@@ -1,6 +1,5 @@
 from pathlib import Path
 import argparse
-import numpy as np
 import pandas as pd
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -9,7 +8,7 @@ DEFAULT_OUTPUT = ROOT / "research" / "research_fire_samples.csv"
 
 
 def round_coord(x):
-    return np.round(pd.to_numeric(x, errors="coerce") / 0.1) * 0.1
+    return (pd.to_numeric(x, errors="coerce") / 0.1).round() * 0.1
 
 
 def main():
@@ -35,7 +34,6 @@ def main():
     df["grid_lat"] = round_coord(df["latitude"])
     df["grid_lon"] = round_coord(df["longitude"])
 
-    # Collapse multiple satellite detections in the same grid cell/hour/day.
     grouped = (
         df.groupby(["grid_lat", "grid_lon", "acq_date", "hour"], as_index=False)
         .agg(
@@ -45,21 +43,24 @@ def main():
         )
     )
     grouped["fire"] = 1
-
-    rng = np.random.default_rng(args.seed)
-    n = min(args.fire_samples, len(grouped))
-    # Stratify by year so one period cannot dominate the research sample.
     grouped["year"] = grouped["acq_date"].dt.year
-    sampled_parts = []
-    per_year = max(1, n // grouped["year"].nunique())
-    for year, part in grouped.groupby("year"):
-        take = min(per_year, len(part))
-        sampled_parts.append(part.sample(n=take, random_state=args.seed + int(year)))
-    fire = pd.concat(sampled_parts, ignore_index=True)
-    if len(fire) < n:
-        remaining = grouped.drop(fire.index, errors="ignore")
-        fire = pd.concat([fire, remaining.sample(n=n-len(fire), random_state=args.seed)], ignore_index=True)
-    fire = fire.sample(n=n, random_state=args.seed).reset_index(drop=True)
+
+    n = min(args.fire_samples, len(grouped))
+    years = sorted(grouped["year"].unique())
+    base = n // len(years)
+    remainder = n % len(years)
+    selected_indices = []
+    for pos, year in enumerate(years):
+        part = grouped[grouped["year"] == year]
+        take = min(len(part), base + (1 if pos < remainder else 0))
+        selected_indices.extend(part.sample(n=take, random_state=args.seed + int(year)).index.tolist())
+
+    selected = grouped.loc[sorted(set(selected_indices))]
+    if len(selected) < n:
+        remaining = grouped.drop(index=selected.index)
+        extra = remaining.sample(n=n-len(selected), random_state=args.seed)
+        selected = pd.concat([selected, extra], ignore_index=False)
+    fire = selected.sample(n=n, random_state=args.seed).reset_index(drop=True)
 
     out = fire[["grid_lat", "grid_lon", "acq_date", "hour", "fire_detections", "mean_confidence", "max_frp", "fire"]]
     out.to_csv(args.output, index=False)
