@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FireWatch | India Forest Fire Risk</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}body{font-family:Inter,sans-serif;color:#f5f7f5;min-height:100vh;background:radial-gradient(circle at 85% 5%,rgba(34,197,94,.13),transparent 28%),linear-gradient(135deg,#06110b,#0b2115 55%,#06100a)}
+.container{width:min(1180px,92%);margin:auto;padding:30px 0 45px}.nav{display:flex;justify-content:space-between;align-items:center;margin-bottom:55px}.brand{display:flex;gap:12px;align-items:center;font-size:20px;font-weight:800}.icon{width:42px;height:42px;display:grid;place-items:center;border-radius:12px;background:linear-gradient(135deg,#22c55e,#15803d)}.status{font-size:12px;color:#aab6ad;border:1px solid rgba(255,255,255,.08);padding:9px 14px;border-radius:99px}.hero{margin-bottom:30px}.eyebrow{color:#4ade80;font-size:12px;font-weight:700;letter-spacing:2px;text-transform:uppercase;margin-bottom:13px}h1{font-size:clamp(38px,5vw,60px);line-height:1.04;letter-spacing:-2.5px;margin-bottom:16px}.hero p{max-width:700px;color:#91a096;line-height:1.7;font-size:15px}
+.grid{display:grid;grid-template-columns:1.12fr .88fr;gap:20px}.card{padding:27px;border-radius:24px;border:1px solid rgba(255,255,255,.09);background:rgba(255,255,255,.05);backdrop-filter:blur(18px);box-shadow:0 25px 80px rgba(0,0,0,.25)}.title{display:flex;justify-content:space-between;margin-bottom:23px}.title h2{font-size:17px}.title span{font-size:11px;color:#69766e}
+.fields{display:grid;grid-template-columns:1fr 1fr;gap:15px}.field label{display:block;color:#aebbb2;font-size:11px;font-weight:600;margin-bottom:7px}input{width:100%;height:49px;border-radius:11px;border:1px solid rgba(255,255,255,.09);background:rgba(0,0,0,.23);color:#fff;padding:0 13px;outline:none;font-size:13px}input:focus{border-color:#22c55e;box-shadow:0 0 0 3px rgba(34,197,94,.1)}.unit{position:relative;float:right;margin-top:-32px;margin-right:12px;color:#66756b;font-size:10px;pointer-events:none}
+button{width:100%;height:54px;margin-top:20px;border:0;border-radius:12px;color:white;background:linear-gradient(135deg,#22c55e,#15803d);font-weight:700;cursor:pointer;box-shadow:0 10px 30px rgba(34,197,94,.18);transition:.2s}button:hover{transform:translateY(-2px)}.result{min-height:100%;display:flex;flex-direction:column;justify-content:space-between}.muted{color:#819087;font-size:11px;letter-spacing:1px}.score{font-size:55px;font-weight:800;letter-spacing:-3px;margin-top:45px}.badge{display:inline-block;margin-top:12px;padding:8px 12px;border-radius:99px;font-size:10px;font-weight:700;background:rgba(34,197,94,.1);color:#4ade80;border:1px solid rgba(34,197,94,.18)}.danger{color:#fb923c;background:rgba(249,115,22,.1);border-color:rgba(249,115,22,.2)}.desc{color:#829087;font-size:13px;line-height:1.7;margin-top:18px}.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:20px}.metric{padding:15px;border:1px solid rgba(255,255,255,.06);background:rgba(255,255,255,.025);border-radius:14px}.metric span{display:block;color:#66736b;font-size:9px;text-transform:uppercase}.metric strong{display:block;margin-top:7px;font-size:12px}.model{margin-top:15px;color:#68766e;font-size:10px;text-align:right}footer{text-align:center;color:#4f5c54;font-size:10px;margin-top:28px}
+@media(max-width:850px){.grid{grid-template-columns:1fr}.score{margin-top:25px}}@media(max-width:560px){.container{width:94%}.status{display:none}.fields{grid-template-columns:1fr}.card{padding:20px}h1{letter-spacing:-1.5px}.metrics{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+<div class="container">
+<nav class="nav"><div class="brand"><div class="icon">🌲</div>FireWatch India</div><div class="status">India FIRMS + Weather</div></nav>
+<section class="hero"><div class="eyebrow">Forest Fire Classification</div><h1>Estimate fire risk<br>from Indian weather conditions.</h1><p>This is the India adaptation of the existing forest-fire classifier. The original Random Forest / Logistic Regression comparison is retained while the inputs are mapped to FIRMS-derived meteorological features.</p></section>
+<div class="grid">
+<div class="card"><div class="title"><h2>Weather Conditions</h2><span>15 model features</span></div>
+<form action="{{ url_for('predict_datapoint') }}" method="post"><div class="fields">
+<div class="field"><label>Temperature</label><input type="number" step="0.1" name="temperature_2m" placeholder="30" required><span class="unit">°C</span></div>
+<div class="field"><label>Relative Humidity</label><input type="number" step="0.1" name="relative_humidity_2m" placeholder="45" required><span class="unit">%</span></div>
+<div class="field"><label>Dew Point</label><input type="number" step="0.1" name="dew_point_2m" placeholder="17" required><span class="unit">°C</span></div>
+<div class="field"><label>Precipitation</label><input type="number" step="0.1" name="precipitation" placeholder="0" required><span class="unit">mm/h</span></div>
+<div class="field"><label>Wind Speed</label><input type="number" step="0.1" name="wind_speed_10m" placeholder="4" required><span class="unit">m/s</span></div>
+<div class="field"><label>Wind Direction</label><input type="number" step="1" name="wind_direction_10m" placeholder="180" required><span class="unit">°</span></div>
+<div class="field"><label>Surface Pressure</label><input type="number" step="0.1" name="surface_pressure" placeholder="1005" required><span class="unit">hPa</span></div>
+<div class="field"><label>Cloud Cover</label><input type="number" step="0.1" name="cloud_cover" placeholder="20" required><span class="unit">%</span></div>
+<div class="field"><label>Soil Moisture</label><input type="number" step="0.001" name="soil_moisture_0_to_7cm" placeholder="0.20" required></div>
+<div class="field"><label>Rain — 24h</label><input type="number" step="0.1" name="rain_24h" placeholder="0" required><span class="unit">mm</span></div>
+<div class="field"><label>Rain — 72h</label><input type="number" step="0.1" name="rain_72h" placeholder="0.5" required><span class="unit">mm</span></div>
+<div class="field"><label>Rain — 7d</label><input type="number" step="0.1" name="rain_168h" placeholder="2" required><span class="unit">mm</span></div>
+<div class="field"><label>Avg Temperature — 24h</label><input type="number" step="0.1" name="avg_temp_24h" placeholder="28" required><span class="unit">°C</span></div>
+<div class="field"><label>Avg Humidity — 24h</label><input type="number" step="0.1" name="avg_humidity_24h" placeholder="48" required><span class="unit">%</span></div>
+<div class="field"><label>Max Wind — 24h</label><input type="number" step="0.1" name="max_wind_24h" placeholder="7" required><span class="unit">m/s</span></div>
+</div><button type="submit">ANALYZE FIRE RISK →</button></form></div>
+<div class="card result"><div><div class="muted">PREDICTION RESULT</div>{% if result %}<div class="score">{{ "%.1f"|format(result.probability) }}%</div><div class="badge {% if result.prediction %}danger{% endif %}">{{ result.label }}</div><p class="desc">The classifier estimates fire probability from the supplied weather conditions.</p>{% else %}<div class="score">—</div><div class="badge">MODEL DATA PENDING</div><p class="desc">The India prototype is waiting for a valid fire/non-fire training dataset. The current FIRMS file contains fire detections only.</p>{% endif %}</div></div>
+</div>
+<div class="model">Target: fire / not fire • Original model family retained • FIRMS fire-intensity fields excluded from prediction features</div>
+<footer>FireWatch India • India Forest Fire Prediction</footer>
+</div>
+</body>
+</html>
