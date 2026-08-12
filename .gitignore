@@ -1,0 +1,24 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+venv/
+env/
+
+# Local data and generated artifacts
+data/raw/
+*.csv
+*.parquet
+weather_cache.csv
+india_firms_fire_samples.csv
+india_forest_fire_dataset.csv
+
+# Generated model artifacts are intentionally kept in models/
+# Remove the next line if you decide to version all model artifacts.
+
+# Local tools / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
