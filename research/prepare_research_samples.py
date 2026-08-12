@@ -1,5 +1,6 @@
 from pathlib import Path
 import argparse
+import numpy as np
 import pandas as pd
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -8,11 +9,11 @@ DEFAULT_OUTPUT = ROOT / "research" / "research_fire_samples.csv"
 
 
 def round_coord(x):
-    return (pd.to_numeric(x, errors="coerce") / 0.1).round() * 0.1
+    return np.round(pd.to_numeric(x, errors="coerce") / 0.1) * 0.1
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Create a reproducible stratified FIRMS sample for Project 2.")
+    parser = argparse.ArgumentParser(description="Create a reproducible year-stratified FIRMS sample for Project 2.")
     parser.add_argument("--input", default=str(DEFAULT_INPUT))
     parser.add_argument("--output", default=str(DEFAULT_OUTPUT))
     parser.add_argument("--fire-samples", type=int, default=100000)
@@ -29,6 +30,8 @@ def main():
     df["latitude"] = pd.to_numeric(df["latitude"], errors="coerce")
     df["longitude"] = pd.to_numeric(df["longitude"], errors="coerce")
     df["acq_time"] = pd.to_numeric(df["acq_time"], errors="coerce").fillna(0).astype(int)
+    df["confidence"] = pd.to_numeric(df["confidence"], errors="coerce")
+    df["frp"] = pd.to_numeric(df["frp"], errors="coerce")
     df = df.dropna(subset=["latitude", "longitude", "acq_date"])
     df["hour"] = (df["acq_time"] // 100).clip(0, 23).astype(int)
     df["grid_lat"] = round_coord(df["latitude"])
@@ -45,24 +48,32 @@ def main():
     grouped["fire"] = 1
     grouped["year"] = grouped["acq_date"].dt.year
 
+    rng = np.random.default_rng(args.seed)
     n = min(args.fire_samples, len(grouped))
     years = sorted(grouped["year"].unique())
     base = n // len(years)
     remainder = n % len(years)
-    selected_indices = []
-    for pos, year in enumerate(years):
+    sampled_parts = []
+
+    for idx, year in enumerate(years):
         part = grouped[grouped["year"] == year]
-        take = min(len(part), base + (1 if pos < remainder else 0))
-        selected_indices.extend(part.sample(n=take, random_state=args.seed + int(year)).index.tolist())
+        target = base + (1 if idx < remainder else 0)
+        target = min(target, len(part))
+        if target:
+            sampled_parts.append(part.sample(n=target, random_state=args.seed + int(year)))
 
-    selected = grouped.loc[sorted(set(selected_indices))]
-    if len(selected) < n:
-        remaining = grouped.drop(index=selected.index)
-        extra = remaining.sample(n=n-len(selected), random_state=args.seed)
-        selected = pd.concat([selected, extra], ignore_index=False)
-    fire = selected.sample(n=n, random_state=args.seed).reset_index(drop=True)
+    fire = pd.concat(sampled_parts, ignore_index=True)
+    if len(fire) < n:
+        selected_keys = pd.MultiIndex.from_frame(fire[["grid_lat", "grid_lon", "acq_date", "hour"]])
+        all_keys = pd.MultiIndex.from_frame(grouped[["grid_lat", "grid_lon", "acq_date", "hour"]])
+        remaining_mask = ~all_keys.isin(selected_keys)
+        remaining = grouped.loc[remaining_mask]
+        extra = remaining.sample(n=n - len(fire), random_state=args.seed)
+        fire = pd.concat([fire, extra], ignore_index=True)
 
+    fire = fire.sample(n=n, random_state=args.seed).reset_index(drop=True)
     out = fire[["grid_lat", "grid_lon", "acq_date", "hour", "fire_detections", "mean_confidence", "max_frp", "fire"]]
+    Path(args.output).parent.mkdir(parents=True, exist_ok=True)
     out.to_csv(args.output, index=False)
 
     print("=" * 60)
