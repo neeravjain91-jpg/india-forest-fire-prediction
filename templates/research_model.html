@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FireWatch India | Research Model</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}body{font-family:Inter,sans-serif;color:#f5f7f5;min-height:100vh;background:radial-gradient(circle at 85% 5%,rgba(34,197,94,.13),transparent 28%),linear-gradient(135deg,#06110b,#0b2115 55%,#06100a)}.container{width:min(1200px,94%);margin:auto;padding:30px 0 45px}.nav{display:flex;justify-content:space-between;align-items:center;margin-bottom:42px}.brand{font-size:20px;font-weight:800}.status{font-size:11px;color:#aab6ad;border:1px solid rgba(255,255,255,.08);padding:9px 14px;border-radius:99px}.hero{margin-bottom:24px}.eyebrow{color:#4ade80;font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;margin-bottom:10px}h1{font-size:clamp(34px,5vw,54px);line-height:1.05;letter-spacing:-2px;margin-bottom:12px}.hero p{max-width:780px;color:#91a096;line-height:1.65;font-size:14px}.grid{display:grid;grid-template-columns:1fr .8fr;gap:20px}.card{padding:25px;border-radius:22px;border:1px solid rgba(255,255,255,.09);background:rgba(255,255,255,.05);backdrop-filter:blur(16px)}.title{display:flex;justify-content:space-between;margin-bottom:20px}.title h2{font-size:17px}.title span{font-size:10px;color:#69766e}.fields{display:grid;grid-template-columns:1fr 1fr;gap:12px}.field label{display:block;color:#aebbb2;font-size:10px;font-weight:600;margin-bottom:6px}.field input{width:100%;height:45px;border-radius:10px;border:1px solid rgba(255,255,255,.09);background:rgba(0,0,0,.23);color:#fff;padding:0 11px;outline:none;font-size:12px}.field input:focus{border-color:#22c55e}.unit{float:right;margin-top:-29px;margin-right:10px;color:#66756b;font-size:9px;pointer-events:none}button{width:100%;height:52px;margin-top:18px;border:0;border-radius:11px;color:white;background:linear-gradient(135deg,#22c55e,#15803d);font-weight:700;cursor:pointer}.result{min-height:100%}.muted{color:#819087;font-size:10px;letter-spacing:1px}.score{font-size:54px;font-weight:800;letter-spacing:-3px;margin-top:35px}.badge{display:inline-block;margin-top:10px;padding:8px 11px;border-radius:99px;font-size:10px;font-weight:700;background:rgba(34,197,94,.1);color:#4ade80;border:1px solid rgba(34,197,94,.18)}.danger{color:#fb923c;background:rgba(249,115,22,.1);border-color:rgba(249,115,22,.2)}.error{color:#fca5a5;margin-top:20px;line-height:1.5}.desc{color:#829087;font-size:12px;line-height:1.6;margin-top:16px}.metrics{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:24px}.metric{padding:13px;border:1px solid rgba(255,255,255,.06);background:rgba(255,255,255,.025);border-radius:12px}.metric span{display:block;color:#66736b;font-size:9px;text-transform:uppercase}.metric strong{display:block;margin-top:6px;font-size:12px}.model{margin-top:13px;color:#68766e;font-size:9px;text-align:right}footer{text-align:center;color:#4f5c54;font-size:9px;margin-top:24px}@media(max-width:900px){.grid{grid-template-columns:1fr}}@media(max-width:600px){.fields{grid-template-columns:1fr}.container{width:95%}.score{font-size:46px}}
+</style>
+</head>
+<body>
+<div class="container">
+<nav class="nav"><div class="brand">🌲 FireWatch India</div><div class="status">Final HGB Research Model</div></nav>
+<section class="hero"><div class="eyebrow">India Forest Fire Classification</div><h1>Run the final research model.</h1><p>This interface uses the validated 31-feature HistGradientBoosting model from the research project. Enter the spatial, temporal, 1-day, 3-day and 7-day values required by the trained model.</p></section>
+<div class="grid">
+<div class="card"><div class="title"><h2>Model Inputs</h2><span>31 FEATURES</span></div>
+<form action="{{ url_for('predict') }}" method="post">
+<div class="fields">
+<div class="field"><label>Latitude</label><input type="number" step="0.1" name="grid_lat" value="20.0" required></div>
+<div class="field"><label>Longitude</label><input type="number" step="0.1" name="grid_lon" value="86.0" required></div>
+<div class="field"><label>Hour</label><input type="number" step="1" min="0" max="23" name="hour" value="7" required></div>
+<div class="field"><label>Year</label><input type="number" step="1" name="year" value="2025" required></div>
+<div class="field"><label>Month</label><input type="number" step="1" min="1" max="12" name="month" value="4" required></div>
+<div class="field"><label>Temperature 1d</label><input type="number" step="0.01" name="temp_1d" value="30" required><span class="unit">°C</span></div>
+<div class="field"><label>RH 1d</label><input type="number" step="0.01" name="rh_1d" value="45" required><span class="unit">%</span></div>
+<div class="field"><label>Wind 1d</label><input type="number" step="0.01" name="wind_1d" value="3" required><span class="unit">m/s</span></div>
+<div class="field"><label>Pressure 1d</label><input type="number" step="0.01" name="pressure_1d" value="1005" required><span class="unit">hPa</span></div>
+<div class="field"><label>Soil 1d</label><input type="number" step="0.001" name="soil_1d" value="0.20" required></div>
+<div class="field"><label>Rain 1d</label><input type="number" step="0.001" name="rain_1d" value="0" required><span class="unit">mm</span></div>
+<div class="field"><label>Temp 3d Mean</label><input type="number" step="0.01" name="temp_3d_mean" value="29" required></div>
+<div class="field"><label>Temp 3d Max</label><input type="number" step="0.01" name="temp_3d_max" value="32" required></div>
+<div class="field"><label>Temp 3d Min</label><input type="number" step="0.01" name="temp_3d_min" value="26" required></div>
+<div class="field"><label>RH 3d Mean</label><input type="number" step="0.01" name="rh_3d_mean" value="48" required></div>
+<div class="field"><label>RH 3d Min</label><input type="number" step="0.01" name="rh_3d_min" value="35" required></div>
+<div class="field"><label>Wind 3d Mean</label><input type="number" step="0.01" name="wind_3d_mean" value="3" required></div>
+<div class="field"><label>Wind 3d Max</label><input type="number" step="0.01" name="wind_3d_max" value="6" required></div>
+<div class="field"><label>Pressure 3d Mean</label><input type="number" step="0.01" name="pressure_3d_mean" value="1005" required></div>
+<div class="field"><label>Soil 3d Mean</label><input type="number" step="0.001" name="soil_3d_mean" value="0.20" required></div>
+<div class="field"><label>Rain 3d Total</label><input type="number" step="0.001" name="rain_3d_total" value="0" required></div>
+<div class="field"><label>Temp 7d Mean</label><input type="number" step="0.01" name="temp_7d_mean" value="28" required></div>
+<div class="field"><label>Temp 7d Max</label><input type="number" step="0.01" name="temp_7d_max" value="33" required></div>
+<div class="field"><label>Temp 7d Min</label><input type="number" step="0.01" name="temp_7d_min" value="25" required></div>
+<div class="field"><label>RH 7d Mean</label><input type="number" step="0.01" name="rh_7d_mean" value="50" required></div>
+<div class="field"><label>RH 7d Min</label><input type="number" step="0.01" name="rh_7d_min" value="32" required></div>
+<div class="field"><label>Wind 7d Mean</label><input type="number" step="0.01" name="wind_7d_mean" value="3" required></div>
+<div class="field"><label>Wind 7d Max</label><input type="number" step="0.01" name="wind_7d_max" value="7" required></div>
+<div class="field"><label>Pressure 7d Mean</label><input type="number" step="0.01" name="pressure_7d_mean" value="1005" required></div>
+<div class="field"><label>Soil 7d Mean</label><input type="number" step="0.001" name="soil_7d_mean" value="0.20" required></div>
+<div class="field"><label>Rain 7d Total</label><input type="number" step="0.001" name="rain_7d_total" value="0" required></div>
+</div>
+<button type="submit">ANALYZE FIRE RISK →</button>
+</form></div>
+<div class="card result"><div><div class="muted">PREDICTION RESULT</div>{% if result and result.error %}<div class="error">{{ result.error }}</div>{% elif result %}<div class="score">{{ "%.1f"|format(result.probability) }}%</div><div class="badge {% if result.prediction %}danger{% endif %}">{{ result.label }}</div><p class="desc">The final HistGradientBoosting classifier has been trained on the validated India 2018–2025 dataset.</p>{% else %}<div class="score">—</div><div class="badge">READY</div><p class="desc">Enter the 31 model inputs and run the final research model.</p>{% endif %}
+{% if metrics and metrics.test %}<div class="metrics"><div class="metric"><span>Test ROC-AUC</span><strong>{{ "%.2f%%"|format(metrics.test.roc_auc * 100) }}</strong></div><div class="metric"><span>Test F1</span><strong>{{ "%.2f%%"|format(metrics.test.f1 * 100) }}</strong></div><div class="metric"><span>Precision</span><strong>{{ "%.2f%%"|format(metrics.test.precision * 100) }}</strong></div><div class="metric"><span>Recall</span><strong>{{ "%.2f%%"|format(metrics.test.recall * 100) }}</strong></div></div>{% endif %}</div></div>
+</div>
+<div class="model">Model: HistGradientBoosting • 31 features • India 2018–2025</div>
+<footer>FireWatch India • Research Model Interface</footer>
+</div>
+</body>
+</html>
